@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { RefreshCw } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 
 interface BettingPanelProps {
   minBet: number;
@@ -8,17 +10,16 @@ interface BettingPanelProps {
   currentBet: number;
   selectedAmount: number;
   difficulty: 'Easy' | 'Medium' | 'Hard' | 'Hardcore';
-  onMinChange: (value: number) => void;
-  onMaxChange: (value: number) => void;
+  rtp: number;
+  onMinChange: () => void;
+  onMaxChange: () => void;
   onAmountSelect: (amount: number) => void;
   onDifficultySelect: (difficulty: 'Easy' | 'Medium' | 'Hard' | 'Hardcore') => void;
+  onRtpChange: (rtp: number) => void;
   onPlay: () => void;
   isPlaying: boolean;
   balance: number;
 }
-
-const betAmounts = [0.5, 1, 2, 7];
-const difficulties = ['Easy', 'Medium', 'Hard', 'Hardcore'] as const;
 
 export const BettingPanel = ({
   minBet,
@@ -26,24 +27,18 @@ export const BettingPanel = ({
   currentBet,
   selectedAmount,
   difficulty,
+  rtp,
   onMinChange,
   onMaxChange,
   onAmountSelect,
   onDifficultySelect,
+  onRtpChange,
   onPlay,
   isPlaying,
   balance
 }: BettingPanelProps) => {
-  const getChanceOfCollision = () => {
-    switch (difficulty) {
-      case 'Easy': return '10%';
-      case 'Medium': return '25%';
-      case 'Hard': return '45%';
-      case 'Hardcore': return '70%';
-      default: return '10%';
-    }
-  };
-
+  const presetAmounts = [0.5, 1, 2, 7];
+  
   const getMultiplier = () => {
     switch (difficulty) {
       case 'Easy': return 1.8;
@@ -54,117 +49,187 @@ export const BettingPanel = ({
     }
   };
 
+  const getWinChance = () => {
+    const multiplier = getMultiplier();
+    return (rtp / 100) / multiplier;
+  };
+
   return (
-    <div className="w-full max-w-2xl mx-auto p-6 bg-game-surface rounded-2xl border border-game-border shadow-2xl">
-      {/* Min/Max Section */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-muted-foreground">MIN</span>
-          <div className="bg-game-bg px-3 py-2 rounded-lg border border-game-border">
-            <span className="text-white font-bold">{minBet}</span>
-          </div>
+    <Card className="p-6 bg-game-surface border-game-border">
+      <div className="space-y-6">
+        {/* Balance Display */}
+        <div className="text-center">
+          <div className="text-sm text-muted-foreground mb-1">Balance</div>
+          <div className="text-3xl font-bold text-game-success">₹{balance.toFixed(2)}</div>
         </div>
-        
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-muted-foreground">MAX</span>
-          <div className="bg-game-bg px-3 py-2 rounded-lg border border-game-border">
-            <span className="text-white font-bold">{maxBet}</span>
-          </div>
-        </div>
-        
-        <div className="ml-auto">
-          <span className="text-lg font-bold text-muted-foreground">Difficulty</span>
-        </div>
-      </div>
 
-      {/* Bet Amounts */}
-      <div className="flex gap-3 mb-6">
-        {betAmounts.map((amount) => (
-          <Button
-            key={amount}
-            variant={selectedAmount === amount ? "default" : "secondary"}
-            size="sm"
-            onClick={() => onAmountSelect(amount)}
-            disabled={isPlaying || amount > balance}
-            className={cn(
-              "px-4 py-2 font-bold transition-all duration-200",
-              selectedAmount === amount && "bg-game-accent text-game-bg hover:bg-game-accent/90",
-              amount > balance && "opacity-50 cursor-not-allowed"
-            )}
-          >
-            {amount} ₹
-          </Button>
-        ))}
-      </div>
+        {/* Betting Amount Controls */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Bet Amount</span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onAmountSelect(Math.max(minBet, selectedAmount - 0.1))}
+                disabled={isPlaying || selectedAmount <= minBet}
+                className="h-8 w-8 p-0 border-game-border hover:border-game-accent"
+              >
+                <Minus className="h-3 w-3" />
+              </Button>
+              
+              <div className="w-20 text-center">
+                <input
+                  type="number"
+                  value={selectedAmount}
+                  onChange={(e) => onAmountSelect(Math.max(minBet, Math.min(maxBet, parseFloat(e.target.value) || minBet)))}
+                  disabled={isPlaying}
+                  className="w-full text-center bg-game-bg border border-game-border rounded px-2 py-1 text-sm focus:border-game-accent focus:outline-none"
+                  step="0.1"
+                  min={minBet}
+                  max={maxBet}
+                />
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onAmountSelect(Math.min(maxBet, selectedAmount + 0.1))}
+                disabled={isPlaying || selectedAmount >= maxBet}
+                className="h-8 w-8 p-0 border-game-border hover:border-game-accent"
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
 
-      {/* Difficulty and Chance Section */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex gap-2">
-          {difficulties.map((diff) => (
+          {/* Min/Max Controls */}
+          <div className="flex gap-2">
             <Button
-              key={diff}
-              variant={difficulty === diff ? "default" : "ghost"}
+              variant="outline"
               size="sm"
-              onClick={() => onDifficultySelect(diff)}
+              onClick={() => onAmountSelect(minBet)}
               disabled={isPlaying}
-              className={cn(
-                "px-4 py-2 font-medium transition-all duration-200",
-                difficulty === diff && "bg-game-accent text-game-bg hover:bg-game-accent/90",
-                difficulty !== diff && "text-muted-foreground hover:text-white hover:bg-game-bg"
-              )}
+              className="flex-1 border-game-border hover:border-game-accent text-xs"
             >
-              {diff}
+              Min (₹{minBet})
             </Button>
-          ))}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onAmountSelect(maxBet)}
+              disabled={isPlaying}
+              className="flex-1 border-game-border hover:border-game-accent text-xs"
+            >
+              Max (₹{maxBet})
+            </Button>
+          </div>
+
+          {/* Preset Amount Buttons */}
+          <div className="grid grid-cols-4 gap-2">
+            {presetAmounts.map((amount) => (
+              <Button
+                key={amount}
+                variant={selectedAmount === amount ? "default" : "outline"}
+                size="sm"
+                onClick={() => onAmountSelect(amount)}
+                disabled={isPlaying}
+                className={cn(
+                  "text-xs font-semibold",
+                  selectedAmount === amount
+                    ? "bg-game-accent text-game-bg hover:bg-game-accent/90"
+                    : "border-game-border hover:border-game-accent"
+                )}
+              >
+                ₹{amount}
+              </Button>
+            ))}
+          </div>
         </div>
-        
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">Chance of collision</span>
-          <div className="flex items-center gap-2">
-            <RefreshCw className="w-4 h-4 text-muted-foreground" />
-            <span className="text-white font-bold">{getChanceOfCollision()}</span>
+
+        {/* RTP Control */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Return to Player (RTP)</span>
+            <Badge variant="outline" className="border-game-border text-game-accent">
+              {rtp}%
+            </Badge>
+          </div>
+          
+          <div className="space-y-2">
+            <input
+              type="range"
+              min="70"
+              max="99"
+              step="1"
+              value={rtp}
+              onChange={(e) => onRtpChange(parseInt(e.target.value))}
+              disabled={isPlaying}
+              className="w-full h-2 bg-game-bg rounded-lg appearance-none cursor-pointer slider"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>70% (House Edge: 30%)</span>
+              <span>99% (House Edge: 1%)</span>
+            </div>
+          </div>
+          
+          <div className="text-xs text-muted-foreground">
+            Win Chance: {(getWinChance() * 100).toFixed(1)}%
+          </div>
+        </div>
+
+        {/* Difficulty Selection */}
+        <div className="space-y-3">
+          <span className="text-sm font-medium">Difficulty</span>
+          <div className="grid grid-cols-2 gap-2">
+            {(['Easy', 'Medium', 'Hard', 'Hardcore'] as const).map((diff) => (
+              <Button
+                key={diff}
+                variant={difficulty === diff ? "default" : "outline"}
+                size="sm"
+                onClick={() => onDifficultySelect(diff)}
+                disabled={isPlaying}
+                className={cn(
+                  "text-xs font-semibold",
+                  difficulty === diff
+                    ? "bg-game-accent text-game-bg hover:bg-game-accent/90"
+                    : "border-game-border hover:border-game-accent"
+                )}
+              >
+                {diff}
+                <span className="ml-1 text-xs opacity-70">
+                  {diff === 'Easy' && '1.8x'}
+                  {diff === 'Medium' && '2.5x'}
+                  {diff === 'Hard' && '3.2x'}
+                  {diff === 'Hardcore' && '4.5x'}
+                </span>
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {/* Play Button */}
+        <Button
+          onClick={onPlay}
+          disabled={isPlaying || selectedAmount > balance || selectedAmount <= 0}
+          className={cn(
+            "w-full h-12 text-lg font-bold transition-all duration-200",
+            "bg-game-accent hover:bg-game-accent/90 text-game-bg",
+            "disabled:opacity-50 disabled:cursor-not-allowed",
+            isPlaying && "animate-pulse"
+          )}
+        >
+          {isPlaying ? "Flipping..." : `Flip Coin - ₹${selectedAmount.toFixed(2)}`}
+        </Button>
+
+        {/* Potential Payout Display */}
+        <div className="text-center p-3 bg-game-bg rounded-lg border border-game-border">
+          <div className="text-sm text-muted-foreground mb-1">Potential Payout</div>
+          <div className="text-xl font-bold text-game-success">
+            ₹{(selectedAmount * getMultiplier()).toFixed(2)}
           </div>
         </div>
       </div>
-
-      {/* Game Info */}
-      <div className="flex items-center justify-between mb-6 p-4 bg-game-bg rounded-lg border border-game-border">
-        <div className="text-center">
-          <div className="text-sm text-muted-foreground">Balance</div>
-          <div className="text-xl font-bold text-game-accent">₹{balance.toFixed(2)}</div>
-        </div>
-        <div className="text-center">
-          <div className="text-sm text-muted-foreground">Bet Amount</div>
-          <div className="text-xl font-bold text-white">₹{selectedAmount}</div>
-        </div>
-        <div className="text-center">
-          <div className="text-sm text-muted-foreground">Win Multiplier</div>
-          <div className="text-xl font-bold text-game-success">{getMultiplier()}x</div>
-        </div>
-      </div>
-
-      {/* Play Button */}
-      <Button
-        onClick={onPlay}
-        disabled={isPlaying || selectedAmount > balance || selectedAmount === 0}
-        size="lg"
-        className={cn(
-          "w-full h-14 text-xl font-bold rounded-xl transition-all duration-300 transform",
-          "bg-game-success hover:bg-game-success/90 text-white",
-          "hover:scale-105 active:scale-95",
-          "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none",
-          isPlaying && "animate-pulse"
-        )}
-      >
-        {isPlaying ? (
-          <div className="flex items-center gap-2">
-            <RefreshCw className="w-5 h-5 animate-spin" />
-            Playing...
-          </div>
-        ) : (
-          'Play'
-        )}
-      </Button>
-    </div>
+    </Card>
   );
 };
