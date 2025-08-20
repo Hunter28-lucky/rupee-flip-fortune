@@ -3,9 +3,11 @@ import { Coin } from "./Coin";
 import { BettingPanel } from "./BettingPanel";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Header } from "./Header";
+import { FooterControls } from "./FooterControls";
 
 export const CoinFlipGame = () => {
-  const [balance, setBalance] = useState(1000);
+  const [balance, setBalance] = useState(100000);
   const [isFlipping, setIsFlipping] = useState(false);
   const [result, setResult] = useState<'heads' | 'tails' | null>(null);
   const [minBet] = useState(0.6);
@@ -14,6 +16,7 @@ export const CoinFlipGame = () => {
   const [difficulty, setDifficulty] = useState<'Easy' | 'Medium' | 'Hard' | 'Hardcore'>('Easy');
   const [rtp, setRtp] = useState(85);
   const [prediction, setPrediction] = useState<'heads' | 'tails'>('heads');
+  const [lastOutcomeWon, setLastOutcomeWon] = useState<boolean | null>(null);
   const [gameHistory, setGameHistory] = useState<Array<{
     bet: number;
     result: 'heads' | 'tails';
@@ -36,106 +39,66 @@ export const CoinFlipGame = () => {
 
   const getWinChance = useCallback(() => {
     const multiplier = getMultiplier();
-    // RTP-based win calculation: RTP% / multiplier = fair win rate
     return (rtp / 100) / multiplier;
   }, [rtp, getMultiplier]);
 
   const flipCoin = useCallback(async () => {
     if (selectedAmount > balance || selectedAmount <= 0) {
-      toast({
-        title: "Invalid Bet",
-        description: "Please check your bet amount and balance.",
-        variant: "destructive"
-      });
+      toast({ title: "Invalid Bet", description: "Please check your bet amount and balance.", variant: "destructive" });
       return;
     }
 
     setIsFlipping(true);
     setResult(null);
-    
-    // Deduct bet amount immediately
-    setBalance(prev => prev - selectedAmount);
+    try { if (navigator.vibrate) navigator.vibrate(20); } catch {}
 
-    // Enhanced coin flip delay with more realistic timing
+    setBalance(prev => prev - selectedAmount);
     await new Promise(resolve => setTimeout(resolve, 2200));
 
-    // Determine result based on RTP
     const random = Math.random();
     const winChance = getWinChance();
     const willWin = random < winChance;
-    
-    // If player should win, match their prediction, otherwise don't
     const coinResult: 'heads' | 'tails' = willWin ? prediction : (prediction === 'heads' ? 'tails' : 'heads');
-    
+
     setResult(coinResult);
     setIsFlipping(false);
+    try { if (navigator.vibrate) navigator.vibrate([0, 30]); } catch {}
 
     const won = coinResult === prediction;
     const multiplier = getMultiplier();
     const payout = won ? selectedAmount * multiplier : 0;
 
+    setLastOutcomeWon(won);
     if (won) {
       setBalance(prev => prev + payout);
-      toast({
-        title: "🎉 You Won!",
-        description: `You won ₹${payout.toFixed(2)}! The coin landed on ${coinResult}.`,
-        variant: "default"
-      });
+      toast({ title: "🎉 You Won!", description: `You won ₹${payout.toFixed(2)}! The coin landed on ${coinResult}.`, variant: "default" });
     } else {
-      toast({
-        title: "😔 You Lost",
-        description: `The coin landed on ${coinResult}. Better luck next time!`,
-        variant: "destructive"
-      });
+      toast({ title: "😔 You Lost", description: `The coin landed on ${coinResult}. Better luck next time!`, variant: "destructive" });
     }
 
-    // Add to game history
-    setGameHistory(prev => [...prev.slice(-9), {
-      bet: selectedAmount,
-      result: coinResult,
-      prediction,
-      won,
-      payout
-    }]);
-
+    setGameHistory(prev => [...prev.slice(-9), { bet: selectedAmount, result: coinResult, prediction, won, payout }]);
   }, [selectedAmount, balance, prediction, rtp, getWinChance, getMultiplier, toast]);
 
   return (
     <div className="min-h-screen bg-game-bg text-white">
-      {/* Header */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-game-accent to-game-success bg-clip-text text-transparent">
-            Coin Flip Casino
-          </h1>
-          <p className="text-xl text-muted-foreground">
-            Test your luck with our enhanced 3D coin flipping game!
-          </p>
-        </div>
-
-        {/* Game Area */}
-        <div className="flex flex-col lg:flex-row gap-8 items-center justify-center">
-          {/* Coin Display */}
-          <div className="flex-1 flex flex-col items-center">
-            <div className="mb-8">
-              <Coin 
-                isFlipping={isFlipping} 
-                result={result || undefined}
-                className="transform scale-110"
-              />
+      <Header balance={balance} />
+      {/* Space above sticky footer with safe area padding */}
+      <div className="container mx-auto px-4 pt-6 pb-[calc(84px+env(safe-area-inset-bottom))]">
+        {/* Vertically centers coin + controls in remaining viewport height */}
+        <div className="grid grid-rows-[1fr_auto_auto] gap-6 min-h-[calc(100vh-6rem-84px-env(safe-area-inset-bottom))]">
+          {/* Coin + prediction */}
+          <div className="flex flex-col items-center justify-center">
+            <div className="mb-6">
+              <Coin isFlipping={isFlipping} result={result || undefined} won={lastOutcomeWon ?? undefined} className="transform" />
             </div>
-            
-            {/* Prediction Buttons */}
-            <div className="flex gap-4 mb-6">
+            <div className="flex gap-3 mb-2">
               <button
                 onClick={() => setPrediction('heads')}
                 disabled={isFlipping}
                 className={cn(
-                  "px-8 py-4 rounded-xl font-bold transition-all duration-300 transform",
+                  "px-6 py-4 rounded-xl font-bold transition-all duration-300 transform",
                   "border-2 hover:scale-105 active:scale-95 shadow-lg",
-                  prediction === 'heads' 
-                    ? "bg-game-accent text-game-bg border-game-accent shadow-game-accent/30" 
-                    : "bg-game-surface/80 text-white border-game-border hover:border-game-accent backdrop-blur-sm",
+                  prediction === 'heads' ? "bg-game-accent text-game-bg border-game-accent shadow-game-accent/30" : "bg-game-surface/80 text-white border-game-border hover:border-game-accent backdrop-blur-sm",
                   isFlipping && "opacity-50 cursor-not-allowed"
                 )}
               >
@@ -148,33 +111,28 @@ export const CoinFlipGame = () => {
                 onClick={() => setPrediction('tails')}
                 disabled={isFlipping}
                 className={cn(
-                  "px-8 py-4 rounded-xl font-bold transition-all duration-300 transform",
+                  "px-6 py-4 rounded-xl font-bold transition-all duration-300 transform",
                   "border-2 hover:scale-105 active:scale-95 shadow-lg",
-                  prediction === 'tails' 
-                    ? "bg-game-accent text-game-bg border-game-accent shadow-game-accent/30" 
-                    : "bg-game-surface/80 text-white border-game-border hover:border-game-accent backdrop-blur-sm",
+                  prediction === 'tails' ? "bg-game-accent text-game-bg border-game-accent shadow-game-accent/30" : "bg-game-surface/80 text-white border-game-border hover:border-game-accent backdrop-blur-sm",
                   isFlipping && "opacity-50 cursor-not-allowed"
                 )}
               >
                 <div className="flex flex-col items-center">
-                  <span className="text-lg mb-1">T</span>
+                  <span className="text-2xl mb-1">₹</span>
                   <span className="text-sm">Tails</span>
                 </div>
               </button>
             </div>
 
-            {/* Result Display */}
             {result && !isFlipping && (
-              <div className="text-center mb-6">
+              <div className="text-center mt-2">
                 <div className="text-3xl font-bold mb-2">
                   Result: <span className="text-game-accent">{result.toUpperCase()}</span>
                 </div>
                 {gameHistory.length > 0 && (
                   <div className={cn(
                     "text-2xl font-bold px-6 py-2 rounded-lg border-2",
-                    gameHistory[gameHistory.length - 1].won 
-                      ? "text-game-success border-game-success/30 bg-game-success/10" 
-                      : "text-game-error border-game-error/30 bg-game-error/10"
+                    gameHistory[gameHistory.length - 1].won ? "text-game-success border-game-success/30 bg-game-success/10 shadow-[0_0_20px_hsl(var(--game-success)/0.4)]" : "text-game-error/80 border-game-error/30 bg-game-error/10 opacity-90"
                   )}>
                     {gameHistory[gameHistory.length - 1].won ? "🎉 YOU WON!" : "😔 YOU LOST"}
                   </div>
@@ -183,8 +141,8 @@ export const CoinFlipGame = () => {
             )}
           </div>
 
-          {/* Betting Panel */}
-          <div className="flex-1 w-full max-w-2xl">
+          {/* Betting panel for desktops */}
+          <div className="hidden lg:block flex-1 w-full max-w-2xl self-center">
             <BettingPanel
               minBet={minBet}
               maxBet={maxBet}
@@ -202,42 +160,31 @@ export const CoinFlipGame = () => {
               balance={balance}
             />
           </div>
-        </div>
 
-        {/* Game History */}
-        {gameHistory.length > 0 && (
-          <div className="mt-12 max-w-6xl mx-auto">
-            <h3 className="text-2xl font-bold mb-6 text-center">Recent Games</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {gameHistory.slice(-8).reverse().map((game, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    "p-4 rounded-lg border-2 transition-all duration-200 backdrop-blur-sm",
-                    game.won 
-                      ? "bg-game-success/10 border-game-success/30 shadow-game-success/20" 
-                      : "bg-game-error/10 border-game-error/30 shadow-game-error/20"
-                  )}
-                >
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-semibold text-lg">₹{game.bet}</span>
-                    <span className={cn(
-                      "font-bold text-lg",
-                      game.won ? "text-game-success" : "text-game-error"
-                    )}>
-                      {game.won ? "+₹" + game.payout.toFixed(2) : "-₹" + game.bet}
-                    </span>
+          {/* Recent Games scroll area */}
+          {gameHistory.length > 0 && (
+            <div className="max-w-6xl mx-auto overflow-y-auto pr-1" style={{ maxHeight: "28vh" }}>
+              <h3 className="text-2xl font-bold mb-6 text-center">Recent Games</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {gameHistory.slice(-8).reverse().map((game, index) => (
+                  <div key={index} className={cn("p-4 rounded-lg border-2 transition-all duration-200 backdrop-blur-sm", game.won ? "bg-game-success/10 border-game-success/30 shadow-game-success/20" : "bg-game-error/10 border-game-error/30 shadow-game-error/20")}> 
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-semibold text-lg">₹{game.bet}</span>
+                      <span className={cn("font-bold text-lg", game.won ? "text-game-success" : "text-game-error")}>
+                        {game.won ? "+₹" + game.payout.toFixed(2) : "-₹" + game.bet}
+                      </span>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Predicted: <span className="font-medium">{game.prediction}</span> | Result: <span className="font-medium">{game.result}</span>
+                    </div>
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    Predicted: <span className="font-medium">{game.prediction}</span> | 
-                    Result: <span className="font-medium">{game.result}</span>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+      <FooterControls selectedAmount={selectedAmount} onAmountSelect={setSelectedAmount} onFlip={flipCoin} isFlipping={isFlipping} difficulty={difficulty} onDifficultySelect={setDifficulty} />
     </div>
   );
 };
