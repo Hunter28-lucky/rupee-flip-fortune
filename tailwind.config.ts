@@ -61,6 +61,19 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				game: {
+					bg: 'hsl(var(--game-bg))',
+					surface: 'hsl(var(--game-surface))',
+					border: 'hsl(var(--game-border))',
+					accent: 'hsl(var(--game-accent))',
+					success: 'hsl(var(--game-success))',
+					warning: 'hsl(var(--game-warning))',
+					error: 'hsl(var(--game-error))'
+				},
+				coin: {
+					gold: 'hsl(var(--coin-gold))',
+					shadow: 'hsl(var(--coin-shadow))'
 				}
 			},
 			borderRadius: {

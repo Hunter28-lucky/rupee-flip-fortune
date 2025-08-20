@@ -8,35 +8,53 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 240 10% 6%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 240 10% 6%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 142 76% 36%;
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 240 4% 16%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 240 4% 16%;
+    --muted-foreground: 240 5% 64.9%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 240 4% 16%;
+    --accent-foreground: 0 0% 98%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 240 4% 16%;
+    --input: 240 4% 16%;
+    --ring: 142 76% 36%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+    
+    /* Game specific colors */
+    --game-bg: 240 8% 8%;
+    --game-surface: 240 6% 12%;
+    --game-border: 240 4% 20%;
+    --game-accent: 45 93% 47%;
+    --game-success: 142 76% 36%;
+    --game-warning: 25 95% 53%;
+    --game-error: 0 84% 60%;
+    
+    /* Coin colors */
+    --coin-gold: 45 93% 47%;
+    --coin-shadow: 240 4% 6%;
+    
+    /* Animation properties */
+    --coin-flip-duration: 1.5s;
+    --bounce-ease: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --smooth-ease: cubic-bezier(0.4, 0, 0.2, 1);
 
     --sidebar-background: 0 0% 98%;
 
@@ -101,5 +119,54 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* Coin flip animations */
+  @keyframes coinFlip {
+    0% { transform: rotateY(0deg) rotateX(0deg); }
+    25% { transform: rotateY(450deg) rotateX(180deg) scale(1.1); }
+    50% { transform: rotateY(900deg) rotateX(360deg) scale(1.2); }
+    75% { transform: rotateY(1350deg) rotateX(540deg) scale(1.1); }
+    100% { transform: rotateY(1800deg) rotateX(720deg) scale(1); }
+  }
+  
+  @keyframes coinBounce {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+  }
+  
+  @keyframes goldShimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+  
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 20px hsl(var(--game-accent) / 0.3); }
+    50% { box-shadow: 0 0 40px hsl(var(--game-accent) / 0.6); }
+  }
+  
+  .coin-flip {
+    animation: coinFlip var(--coin-flip-duration) var(--bounce-ease);
+  }
+  
+  .coin-bounce {
+    animation: coinBounce 0.6s var(--bounce-ease) infinite;
+  }
+  
+  .gold-shimmer {
+    background: linear-gradient(
+      45deg,
+      hsl(var(--coin-gold)),
+      hsl(var(--game-accent)),
+      hsl(var(--coin-gold))
+    );
+    background-size: 200% 200%;
+    animation: goldShimmer 2s ease-in-out infinite;
+  }
+  
+  .pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
   }
 }
