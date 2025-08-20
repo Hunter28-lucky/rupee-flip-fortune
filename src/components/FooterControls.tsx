@@ -21,7 +21,7 @@ export const FooterControls = ({
   onDifficultySelect
 }: FooterControlsProps) => {
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-game-border bg-game-surface/90 backdrop-blur supports-[backdrop-filter]:bg-game-surface/70">
+    <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-game-border bg-game-surface/80 backdrop-blur supports-[backdrop-filter]:bg-game-surface/60 shadow-[0_-8px_24px_rgba(0,0,0,0.35)] pb-[env(safe-area-inset-bottom)]">
       <div className="container mx-auto px-4 py-3 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_1fr] items-center">
         {/* Bet pills */}
         <div className="flex flex-wrap gap-2">
