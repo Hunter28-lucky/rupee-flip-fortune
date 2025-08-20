@@ -3,10 +3,11 @@ import { cn } from "@/lib/utils";
 interface CoinProps {
   isFlipping: boolean;
   result?: 'heads' | 'tails';
+  won?: boolean;
   className?: string;
 }
 
-export const Coin = ({ isFlipping, result, className }: CoinProps) => {
+export const Coin = ({ isFlipping, result, won, className }: CoinProps) => {
   return (
     <div className={cn("flex items-center justify-center perspective-1000", className)}>
       {/* Enhanced 3D Coin Container */}
@@ -40,7 +41,8 @@ export const Coin = ({ isFlipping, result, className }: CoinProps) => {
             "relative w-36 h-36 rounded-full transform-gpu transition-all duration-500",
             isFlipping && "coin-flip-enhanced",
             !isFlipping && result && "coin-land-bounce",
-            "preserve-3d"
+            "preserve-3d",
+            !isFlipping && result && won === false && "opacity-80 saturate-75"
           )}
         >
           {/* Coin Edge (3D Thickness) */}
@@ -65,19 +67,13 @@ export const Coin = ({ isFlipping, result, className }: CoinProps) => {
               textShadow: '2px 2px 4px rgba(0,0,0,0.8)'
             }}
           >
-            <div className="relative">
-              ₹
-              {/* Inner glow */}
-              <div className="absolute inset-0 flex items-center justify-center text-5xl font-black text-yellow-200/30 blur-sm">
-                ₹
-              </div>
-            </div>
+            <EmbossedRupee />
           </div>
           
           {/* Coin Back (Tails) */}
           <div 
             className={cn(
-              "absolute inset-0 rounded-full coin-face-gradient-alt flex items-center justify-center text-2xl font-black text-white shadow-2xl border-2 border-yellow-400/50",
+              "absolute inset-0 rounded-full coin-face-gradient-alt flex items-center justify-center text-5xl font-black text-white shadow-2xl border-2 border-yellow-400/50",
               "backface-hidden transform-gpu",
               result === 'tails' && !isFlipping && "winner-glow"
             )}
@@ -87,15 +83,7 @@ export const Coin = ({ isFlipping, result, className }: CoinProps) => {
               textShadow: '2px 2px 4px rgba(0,0,0,0.8)'
             }}
           >
-            <div className="relative flex flex-col items-center">
-              <div className="text-3xl font-black">T</div>
-              <div className="text-xs font-bold -mt-1">AIL</div>
-              {/* Inner glow */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-yellow-200/30 blur-sm">
-                <div className="text-3xl font-black">T</div>
-                <div className="text-xs font-bold -mt-1">AIL</div>
-              </div>
-            </div>
+            <EmbossedRupee />
           </div>
           
           {/* Reflective Surface */}
@@ -126,3 +114,11 @@ export const Coin = ({ isFlipping, result, className }: CoinProps) => {
     </div>
   );
 };
+
+const EmbossedRupee = () => (
+  <div className="relative select-none">
+    <span className="text-yellow-50/95">₹</span>
+    <span className="absolute inset-0 flex items-center justify-center text-5xl font-black text-yellow-200/30 blur-sm pointer-events-none">₹</span>
+    <span className="absolute left-1 top-1 text-yellow-900/30">₹</span>
+  </div>
+);

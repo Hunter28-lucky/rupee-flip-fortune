@@ -3,9 +3,11 @@ import { Coin } from "./Coin";
 import { BettingPanel } from "./BettingPanel";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Header } from "./Header";
+import { FooterControls } from "./FooterControls";
 
 export const CoinFlipGame = () => {
-  const [balance, setBalance] = useState(1000);
+  const [balance, setBalance] = useState(100000);
   const [isFlipping, setIsFlipping] = useState(false);
   const [result, setResult] = useState<'heads' | 'tails' | null>(null);
   const [minBet] = useState(0.6);
@@ -14,6 +16,7 @@ export const CoinFlipGame = () => {
   const [difficulty, setDifficulty] = useState<'Easy' | 'Medium' | 'Hard' | 'Hardcore'>('Easy');
   const [rtp, setRtp] = useState(85);
   const [prediction, setPrediction] = useState<'heads' | 'tails'>('heads');
+  const [lastOutcomeWon, setLastOutcomeWon] = useState<boolean | null>(null);
   const [gameHistory, setGameHistory] = useState<Array<{
     bet: number;
     result: 'heads' | 'tails';
@@ -52,6 +55,9 @@ export const CoinFlipGame = () => {
 
     setIsFlipping(true);
     setResult(null);
+    try {
+      if (navigator.vibrate) navigator.vibrate(20);
+    } catch {}
     
     // Deduct bet amount immediately
     setBalance(prev => prev - selectedAmount);
@@ -69,11 +75,15 @@ export const CoinFlipGame = () => {
     
     setResult(coinResult);
     setIsFlipping(false);
+    try {
+      if (navigator.vibrate) navigator.vibrate([0, 30]);
+    } catch {}
 
     const won = coinResult === prediction;
     const multiplier = getMultiplier();
     const payout = won ? selectedAmount * multiplier : 0;
 
+    setLastOutcomeWon(won);
     if (won) {
       setBalance(prev => prev + payout);
       toast({
@@ -101,30 +111,21 @@ export const CoinFlipGame = () => {
   }, [selectedAmount, balance, prediction, rtp, getWinChance, getMultiplier, toast]);
 
   return (
-    <div className="min-h-screen bg-game-bg text-white">
-      {/* Header */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-game-accent to-game-success bg-clip-text text-transparent">
-            Coin Flip Casino
-          </h1>
-          <p className="text-xl text-muted-foreground">
-            Test your luck with our enhanced 3D coin flipping game!
-          </p>
-        </div>
-
+    <div className="min-h-screen bg-game-bg text-white pb-28">
+      <Header balance={balance} />
+      <div className="container mx-auto px-4 py-6">
         {/* Game Area */}
-        <div className="flex flex-col lg:flex-row gap-8 items-center justify-center">
+        <div className="flex flex-col lg:flex-row gap-8 items-center justify-center min-h-[calc(100vh-11rem)]">
           {/* Coin Display */}
-          <div className="flex-1 flex flex-col items-center">
+          <div className="flex-1 flex flex-col items-center justify-center">
             <div className="mb-8">
               <Coin 
                 isFlipping={isFlipping} 
                 result={result || undefined}
+                won={lastOutcomeWon ?? undefined}
                 className="transform scale-110"
               />
             </div>
-            
             {/* Prediction Buttons */}
             <div className="flex gap-4 mb-6">
               <button
@@ -157,7 +158,7 @@ export const CoinFlipGame = () => {
                 )}
               >
                 <div className="flex flex-col items-center">
-                  <span className="text-lg mb-1">T</span>
+                  <span className="text-2xl mb-1">₹</span>
                   <span className="text-sm">Tails</span>
                 </div>
               </button>
@@ -173,8 +174,8 @@ export const CoinFlipGame = () => {
                   <div className={cn(
                     "text-2xl font-bold px-6 py-2 rounded-lg border-2",
                     gameHistory[gameHistory.length - 1].won 
-                      ? "text-game-success border-game-success/30 bg-game-success/10" 
-                      : "text-game-error border-game-error/30 bg-game-error/10"
+                      ? "text-game-success border-game-success/30 bg-game-success/10 shadow-[0_0_20px_hsl(var(--game-success)/0.4)]" 
+                      : "text-game-error/80 border-game-error/30 bg-game-error/10 opacity-90"
                   )}>
                     {gameHistory[gameHistory.length - 1].won ? "🎉 YOU WON!" : "😔 YOU LOST"}
                   </div>
@@ -184,7 +185,7 @@ export const CoinFlipGame = () => {
           </div>
 
           {/* Betting Panel */}
-          <div className="flex-1 w-full max-w-2xl">
+          <div className="hidden lg:block flex-1 w-full max-w-2xl">
             <BettingPanel
               minBet={minBet}
               maxBet={maxBet}
@@ -203,7 +204,6 @@ export const CoinFlipGame = () => {
             />
           </div>
         </div>
-
         {/* Game History */}
         {gameHistory.length > 0 && (
           <div className="mt-12 max-w-6xl mx-auto">
@@ -238,6 +238,14 @@ export const CoinFlipGame = () => {
           </div>
         )}
       </div>
+      <FooterControls
+        selectedAmount={selectedAmount}
+        onAmountSelect={setSelectedAmount}
+        onFlip={flipCoin}
+        isFlipping={isFlipping}
+        difficulty={difficulty}
+        onDifficultySelect={setDifficulty}
+      />
     </div>
   );
 };
